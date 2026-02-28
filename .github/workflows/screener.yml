@@ -1,0 +1,19 @@
+name: 美股卖出Put期权筛选推送
+
+on:
+  schedule:
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+jobs:
+  screener:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - run: pip install pandas xlsxwriter requests openpyxl numpy
+    - env:
+        WECHAT_WEBHOOK: ${{ secrets.WECHAT_WEBHOOK }}
+      run: python put_screener.py
