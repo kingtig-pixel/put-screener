@@ -96,7 +96,12 @@ def generate_excel(results, output_path):
     
     df = pd.DataFrame(results)
     df = df.sort_values('月度收益率', ascending=False)
+   if '距离到期(天)' not in df.columns:
+        print("⚠️  自动补全'距离到期(天)'字段...")
+        df['距离到期(天)'] = 28  # 默认值28天，或根据你的数据调整
     
+    df = df.sort_values('月度收益率', ascending=False)
+           
     # ✅ 自动计算 '距离到期(天)' 如果不存在
     if '距离到期(天)' not in df.columns:
         if '到期日' in df.columns:
