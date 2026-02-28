@@ -97,82 +97,17 @@ def generate_excel(results, output_path):
     df = pd.DataFrame(results)
     df = df.sort_values('月度收益率', ascending=False)
     
+    # ✅ 自动计算 '距离到期(天)' 如果不存在
+    if '距离到期(天)' not in df.columns:
+        if '到期日' in df.columns:
+            df['到期日'] = pd.to_datetime(df['到期日'])
+            today = datetime.now()
+            df['距离到期(天)'] = (df['到期日'] - today).dt.days
+        else:
+            df['距离到期(天)'] = 28  # 默认值
+    
     df_export = df[['股票代码', '股票名称', '到期日', '股票现价', '行权价', '期权价格', 
                      '月度收益率', '距离到期(天)']].copy()
-    
-    df_export.columns = ['股票代码', '股票名称', '到期日', '股票现价($)', '行权价($)', 
-                         '期权价格($)', '月度收益率(%)', '距离到期(天)']
-    
-    with pd.ExcelWriter(output_path, engine='xlsxwriter') as writer:
-        df_export.to_excel(writer, sheet_name='卖出Put期权筛选', index=False, startrow=3, startcol=1)
-        
-        workbook = writer.book
-        worksheet = writer.sheets['卖出Put期权筛选']
-        
-        # 隐藏网格线
-        worksheet.hide_gridlines(2)
-        
-        # 格式定义
-        title_format = workbook.add_format({
-            'bold': True, 'font_size': 16, 'font_color': '#1F4E79',
-            'align': 'center', 'valign': 'vcenter'
-        })
-        subtitle_format = workbook.add_format({
-            'font_size': 10, 'font_color': '#666666', 'align': 'center', 'valign': 'vcenter'
-        })
-        header_format = workbook.add_format({
-            'bold': True, 'font_size': 11, 'font_color': 'white', 
-            'bg_color': '#1F4E79', 'align': 'center', 'valign': 'vcenter', 'border': 1
-        })
-        data_format = workbook.add_format({
-            'align': 'center', 'valign': 'vcenter', 'font_size': 10
-        })
-        yield_format = workbook.add_format({
-            'bold': True, 'font_color': '#008000', 'align': 'center', 'valign': 'vcenter'
-        })
-        currency_format = workbook.add_format({
-            'num_format': '$#,##0.00', 'align': 'center', 'valign': 'vcenter', 'font_size': 10
-        })
-        
-        # 标题
-        worksheet.merge_range('B2:I2', '美股卖出Put期权筛选清单', title_format)
-        worksheet.set_row(1, 30)
-        
-        # 副标题
-        now_str = datetime.now().strftime('%Y-%m-%d %H:%M')
-        worksheet.merge_range('B3:I3', 
-            f'筛选条件：月度收益率 ≥ 6% | 数据更新时间：{now_str}', 
-            subtitle_format)
-        
-        # 表头
-        for col_num, value in enumerate(df_export.columns.values):
-            worksheet.write(3, col_num + 1, value, header_format)
-        
-        # 数据行
-        for row_num in range(len(df_export)):
-            for col_num in range(len(df_export.columns)):
-                value = df_export.iloc[row_num, col_num]
-                row = 4 + row_num
-                col = col_num + 1
-                
-                if col_num in [3, 4, 5]:  # 价格列
-                    worksheet.write(row, col, value, currency_format)
-                elif col_num == 6:  # 月度收益率
-                    worksheet.write(row, col, value, yield_format)
-                else:
-                    worksheet.write(row, col, value, data_format)
-        
-        # 设置列宽
-        worksheet.set_column('A:A', 3)
-        worksheet.set_column('B:B', 10)
-        worksheet.set_column('C:C', 26)
-        worksheet.set_column('D:D', 12)
-        worksheet.set_column('E:G', 12)
-        worksheet.set_column('H:H', 14)
-        worksheet.set_column('I:I', 12)
-    
-    print(f"✅ Excel已生成: {output_path}")
-    return output_path
 
 def upload_file_to_wecom(file_path, webhook_url):
     """上传文件到企业微信，获取 media_id"""
